@@ -1,0 +1,15 @@
+<div class="empty-state">
+	<i class="pi" [class]="icon"></i>
+
+	<ng-content></ng-content>
+
+	@if (message) {
+		<p class="empty-state-message">{{message}}</p>
+	}
+	@if (hint) {
+		<p class="empty-state-hint">{{hint}}</p>
+	}
+	@if (actionLabel && actionRoute) {
+		<p-button [label]="actionLabel" [icon]="'pi ' + actionIcon" size="small" [routerLink]="actionRoute" styleClass="mt-2" />
+	}
+</div>

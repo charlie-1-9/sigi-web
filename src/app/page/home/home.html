@@ -1,0 +1,349 @@
+<div class="page-header">
+	<div>
+		<h1 class="page-title">{{timeGreeting}}, {{firstName}}.</h1>
+		<p class="page-subtitle">
+			@switch (role) {
+				@case ('Solicitante') { ¿Todo funciona bien hoy? Aquí puedes reportar y dar seguimiento a tus incidencias. }
+				@case ('Técnico') { Estas son las incidencias asignadas a ti actualmente. }
+				@case ('Administrador OTI') { Vista general del estado de las incidencias en la OTI. }
+				@default { Bienvenido al Sistema Integrado de Gestión de Incidencias. }
+			}
+		</p>
+	</div>
+
+	<div class="server-status" [ngClass]="serverStatus">
+		<span class="server-dot"></span>
+		@switch (serverStatus) {
+			@case ('ok') { Servidor web conectado }
+			@case ('error') { Sin conexión al servidor }
+			@default { Verificando conexión… }
+		}
+	</div>
+</div>
+
+@if (role === 'Solicitante') {
+	<!-- "¿Qué necesitas hoy?" — puerta de entrada del portal, antes que
+	     cualquier otro contenido. Los dos botones llevan al mismo asistente
+	     por ahora (no existe todavía un flujo de "solicitud de servicio"
+	     separado en el backend) — la distinción ayuda al usuario a
+	     orientarse igual, y el asistente ya pregunta el detalle después. -->
+	<div class="hero-question mb-6">
+		<p class="section-label mb-3">¿Qué necesitas hoy?</p>
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+			<a class="hero-choice" routerLink="/incident/insert">
+				<i class="pi pi-wrench"></i>
+				<span>Reportar un problema</span>
+			</a>
+			<a class="hero-choice hero-choice--accent" routerLink="/incident/insert">
+				<i class="pi pi-inbox"></i>
+				<span>Solicitar un servicio</span>
+			</a>
+		</div>
+	</div>
+}
+
+@if (role === 'Técnico') {
+	<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+		@for (kpi of technicianKpis; track kpi.label) {
+			<div class="page-card !p-4 kpi-card">
+				<div class="flex items-center gap-2 mb-2">
+					<i class="pi" [class]="kpi.icon" [style.color]="kpi.color"></i>
+					<span class="text-xs text-gray-500">{{kpi.label}}</span>
+				</div>
+				<p class="text-2xl font-semibold m-0" style="color:var(--text-primary,#16202B)">{{kpi.count}}</p>
+			</div>
+		}
+	</div>
+}
+
+@if (serviceStatusList.length > 0) {
+	<div class="service-status-strip mb-4">
+		@for (s of serviceStatusList; track s.idServiceStatus) {
+			<span class="service-status-pill" [pTooltip]="s.note || s.status" tooltipPosition="top">
+				<i class="pi" [class]="s.icon" [style.color]="SERVICE_STATUS_META[s.status]?.color"></i>
+				{{s.name}}
+				<span class="service-status-dot" [style.backgroundColor]="SERVICE_STATUS_META[s.status]?.color"></span>
+			</span>
+		}
+	</div>
+}
+
+@if (announcementList.length > 0) {
+	<div class="flex flex-col gap-2 mb-4">
+		@for (a of announcementList; track a.idAnnouncement) {
+			<div class="announcement-banner" [style.backgroundColor]="SEVERITY_META[a.severity]?.bg" [style.color]="SEVERITY_META[a.severity]?.fg">
+				<i class="pi" [class]="SEVERITY_META[a.severity]?.icon"></i>
+				<div>
+					<strong>{{a.title}}</strong>
+					<span> — {{a.message}}</span>
+				</div>
+			</div>
+		}
+	</div>
+}
+
+@if (role === 'Solicitante' && serviceCategories.length > 0) {
+	<h2 class="section-label mb-2">Accesos rápidos</h2>
+	<div class="service-tile-grid mb-6">
+		@for (c of serviceCategories; track c.idCategory) {
+			<a class="service-tile" [routerLink]="['/incident/insert']" [queryParams]="{ category: c.idCategory }">
+				<i class="pi" [class]="c.icon" [style.color]="c.color"></i>
+				<span>{{c.name}}</span>
+			</a>
+		}
+	</div>
+}
+
+@if (role === 'Administrador OTI') {
+	<!-- Indicadores generales — "incidentes masivos" no está acá: detectar
+	     picos de incidencias similares en poco tiempo requiere lógica de
+	     backend que todavía no existe (no es solo leer un número). -->
+	<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+		<div class="page-card !p-4 kpi-card">
+			<div class="flex items-center gap-2 mb-2">
+				<i class="pi pi-folder-open" style="color:#1E3A5F"></i>
+				<span class="text-xs text-gray-500">Incidencias abiertas</span>
+			</div>
+			<p class="text-2xl font-semibold m-0" style="color:var(--text-primary,#16202B)">{{adminOpenIncidentsCount}}</p>
+		</div>
+
+		<div class="page-card !p-4 kpi-card">
+			<div class="flex items-center gap-2 mb-2">
+				<i class="pi pi-stopwatch" style="color:#0F7C6C"></i>
+				<span class="text-xs text-gray-500">Promedio de atención</span>
+			</div>
+			<p class="text-2xl font-semibold m-0" style="color:var(--text-primary,#16202B)">{{adminAvgResolutionHours !== null ? adminAvgResolutionHours + 'h' : '—'}}</p>
+		</div>
+
+		<div class="page-card !p-4 kpi-card">
+			<div class="flex items-center gap-2 mb-2">
+				<i class="pi pi-user-plus" style="color:#22c55e"></i>
+				<span class="text-xs text-gray-500" [pTooltip]="'Técnicos sin incidencias abiertas asignadas ahora mismo'" tooltipPosition="top">Técnicos disponibles</span>
+			</div>
+			<p class="text-2xl font-semibold m-0" style="color:var(--text-primary,#16202B)">{{adminAvailableTechniciansCount}}</p>
+		</div>
+
+		<div class="page-card !p-4 kpi-card">
+			<div class="flex items-center gap-2 mb-2">
+				<i class="pi pi-exclamation-circle" style="color:#ef4444"></i>
+				<span class="text-xs text-gray-500">Servicio con más fallas</span>
+			</div>
+			<p class="text-lg font-semibold m-0" style="color:var(--text-primary,#16202B)">{{adminTopFailingService?.category || '—'}}</p>
+		</div>
+	</div>
+
+	<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+		@for (s of statusCounts; track s.name) {
+			<div class="page-card !p-4">
+				<div class="flex items-center gap-2 mb-2">
+					<span class="dot" [style.backgroundColor]="s.color"></span>
+					<span class="text-xs text-gray-500">{{s.name}}</span>
+				</div>
+				<p class="text-2xl font-semibold m-0" style="color:#16202B">{{s.count}}</p>
+			</div>
+		}
+	</div>
+}
+
+@if (!loading && listIncident.length > 0) {
+	<h2 class="section-label mb-2">Panorama</h2>
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+		<div class="page-card">
+			<h3 class="font-medium m-0 mb-3 text-sm">
+				{{ role === 'Solicitante' ? 'Mis incidencias por estado' : role === 'Técnico' ? 'Mis asignaciones por estado' : 'Incidencias por estado' }}
+			</h3>
+			<div class="chart-box">
+				@if (statusChartData) {
+					<p-chart type="doughnut" [data]="statusChartData" [options]="statusChartOptions" [responsive]="true" ariaLabel="Gráfico de incidencias por estado" />
+				}
+			</div>
+		</div>
+
+		<div class="page-card">
+			<h3 class="font-medium m-0 mb-3 text-sm">Distribución por prioridad</h3>
+			<div class="chart-box">
+				@if (priorityChartData) {
+					<p-chart type="bar" [data]="priorityChartData" [options]="priorityChartOptions" [responsive]="true" ariaLabel="Gráfico de incidencias por prioridad" />
+				}
+			</div>
+		</div>
+	</div>
+}
+
+@if (role === 'Administrador OTI') {
+	<h2 class="section-label mb-2">Reportes</h2>
+
+	@if (reportLoading) {
+		<div class="page-card mb-6"><div class="empty-state !py-6"><i class="pi pi-spin pi-spinner"></i></div></div>
+	} @else {
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+			<div class="page-card">
+				<h3 class="font-medium m-0 mb-3 text-sm">Tiempo promedio de resolución por categoría</h3>
+				@if (avgResolutionHoursByCategory.length === 0) {
+					<div class="empty-state !py-6">
+						<i class="pi pi-chart-bar"></i>
+						<p class="text-sm m-0">Todavía no hay incidencias resueltas para calcular esto.</p>
+					</div>
+				} @else {
+					<p-table [value]="avgResolutionHoursByCategory" styleClass="p-datatable-sm">
+						<ng-template pTemplate="header">
+							<tr>
+								<th>Categoría</th>
+								<th>Promedio</th>
+								<th>Resueltas</th>
+							</tr>
+						</ng-template>
+						<ng-template pTemplate="body" let-row>
+							<tr>
+								<td>{{row.category}}</td>
+								<td>{{row.avgHours}}h</td>
+								<td>{{row.total}}</td>
+							</tr>
+						</ng-template>
+					</p-table>
+				}
+			</div>
+
+			<div class="page-card">
+				<h3 class="font-medium m-0 mb-3 text-sm">Tiempo promedio de resolución por técnico</h3>
+				@if (avgResolutionHoursByTechnician.length === 0) {
+					<div class="empty-state !py-6">
+						<i class="pi pi-chart-bar"></i>
+						<p class="text-sm m-0">Todavía no hay incidencias resueltas para calcular esto.</p>
+					</div>
+				} @else {
+					<p-table [value]="avgResolutionHoursByTechnician" styleClass="p-datatable-sm">
+						<ng-template pTemplate="header">
+							<tr>
+								<th>Técnico</th>
+								<th>Promedio</th>
+								<th>Resueltas</th>
+							</tr>
+						</ng-template>
+						<ng-template pTemplate="body" let-row>
+							<tr>
+								<td>{{row.technicianFullName}}</td>
+								<td>{{row.avgHours}}h</td>
+								<td>{{row.total}}</td>
+							</tr>
+						</ng-template>
+					</p-table>
+				}
+			</div>
+		</div>
+
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+			<div class="page-card">
+				<h3 class="font-medium m-0 mb-3 text-sm">Carga de trabajo por técnico</h3>
+				@if (workloadByTechnician.length === 0) {
+					<div class="empty-state !py-6">
+						<i class="pi pi-users"></i>
+						<p class="text-sm m-0">No hay técnicos registrados.</p>
+					</div>
+				} @else {
+					<p-table [value]="workloadByTechnician" styleClass="p-datatable-sm">
+						<ng-template pTemplate="header">
+							<tr>
+								<th>Técnico</th>
+								<th>Abiertas</th>
+								<th>Total histórico</th>
+							</tr>
+						</ng-template>
+						<ng-template pTemplate="body" let-row>
+							<tr>
+								<td>{{row.technicianFullName}}</td>
+								<td>
+									<p-tag [value]="row.openCount" [severity]="row.openCount > 3 ? 'danger' : row.openCount > 0 ? 'warn' : 'success'" />
+								</td>
+								<td>{{row.totalCount}}</td>
+							</tr>
+						</ng-template>
+					</p-table>
+				}
+			</div>
+
+			<div class="page-card">
+				<h3 class="font-medium m-0 mb-3 text-sm">Incidencias con SLA vencido</h3>
+				@if (slaOverdue.length === 0) {
+					<div class="empty-state !py-6">
+						<i class="pi pi-check-circle"></i>
+						<p class="text-sm m-0">Ninguna incidencia abierta superó su SLA. 🎉</p>
+					</div>
+				} @else {
+					<p-table [value]="slaOverdue" styleClass="p-datatable-sm">
+						<ng-template pTemplate="header">
+							<tr>
+								<th>Ticket</th>
+								<th>Categoría</th>
+								<th>Vencida por</th>
+								<th>Técnico</th>
+							</tr>
+						</ng-template>
+						<ng-template pTemplate="body" let-row>
+							<tr>
+								<td>
+									<a [routerLink]="['/incident/follow-up']" [queryParams]="{ code: row.ticketCode }" [title]="row.title" class="font-mono-ticket text-xs" style="color:#0F7C6C">{{row.ticketCode}}</a>
+								</td>
+								<td>{{row.category}}</td>
+								<td><p-tag [value]="(row.hoursElapsed - row.slaHours | number:'1.0-0') + 'h'" severity="danger" /></td>
+								<td>{{row.technicianFullName || 'Sin asignar'}}</td>
+							</tr>
+						</ng-template>
+					</p-table>
+				}
+			</div>
+		</div>
+	}
+}
+
+<h2 class="section-label mb-2">{{ role === 'Solicitante' ? 'Más opciones' : 'Accesos rápidos' }}</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+	<div class="page-card">
+		<i class="pi pi-list text-2xl mb-2" style="color:#1E3A5F"></i>
+		<h3 class="font-medium m-0 mb-1">
+			{{ role === 'Solicitante' ? 'Mis incidencias' : role === 'Técnico' ? 'Mis asignaciones' : 'Todas las incidencias' }}
+		</h3>
+		<p class="text-sm text-gray-500 mb-3">Consulta el listado con filtros por estado y prioridad.</p>
+		<p-button label="Ver incidencias" routerLink="/incident/list" size="small" severity="secondary" [outlined]="true" />
+	</div>
+
+	<div class="page-card">
+		<i class="pi pi-search text-2xl mb-2" style="color:#1E3A5F"></i>
+		<h3 class="font-medium m-0 mb-1">Seguimiento por ticket</h3>
+		<p class="text-sm text-gray-500 mb-3">Busca una incidencia por su código y revisa su historial.</p>
+		<p-button label="Buscar ticket" routerLink="/incident/follow-up" size="small" severity="secondary" [outlined]="true" />
+	</div>
+</div>
+
+<div class="page-card">
+	<div class="flex items-center justify-between mb-3">
+		<h2 class="section-label m-0">{{ role === 'Solicitante' ? 'Mis solicitudes recientes' : 'Incidencias recientes' }}</h2>
+		<a routerLink="/incident/list" class="text-xs font-medium" style="color:#0F7C6C">Ver todas</a>
+	</div>
+
+	@if (loading) {
+		<div class="empty-state !py-6"><i class="pi pi-spin pi-spinner"></i></div>
+	} @else if (recentIncidents.length === 0) {
+		<div class="empty-state !py-8">
+			<i class="pi pi-inbox"></i>
+			@if (role === 'Solicitante') {
+				<p class="text-sm m-0 mb-1">Aún no tienes solicitudes.</p>
+				<p class="text-xs text-gray-400 m-0 mb-3">Si algo falla, te ayudamos a resolverlo.</p>
+				<p-button label="Registrar incidencia" icon="pi pi-plus-circle" size="small" routerLink="/incident/insert" />
+			} @else {
+				<p class="text-sm m-0">Todavía no hay incidencias para mostrar.</p>
+			}
+		</div>
+	} @else {
+		<div class="flex flex-col gap-2">
+			@for (item of recentIncidents; track item.idIncident) {
+				<button class="recent-row" [routerLink]="['/incident/follow-up']" [queryParams]="{ code: item.ticketCode }">
+					<span class="font-mono-ticket text-xs text-gray-400 w-28 text-left">{{item.ticketCode}}</span>
+					<span class="flex-1 text-left text-sm text-gray-700 truncate">{{item.title}}</span>
+					<p-tag [value]="item.status" [style]="{ backgroundColor: STATUS_COLORS[item.status] + '1A', color: STATUS_COLORS[item.status] }" />
+				</button>
+			}
+		</div>
+	}
+</div>
+

@@ -1,0 +1,5 @@
+{
+  "status": "ok",
+  "service": "sigi-web",
+  "message": "Endpoint estático servido por el servidor web (Nginx/Apache)."
+}

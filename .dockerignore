@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+w3c-snapshots
+.angular
+.git
+.github
+*.log
+npm-debug.log*
+
+# Documentación y evidencia que no hace falta dentro de la imagen
+docs
+DEPLOY.md
+README.md

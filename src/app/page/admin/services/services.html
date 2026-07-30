@@ -1,0 +1,96 @@
+<div class="page-header">
+	<div>
+		<h1 class="page-title">Estado de servicios y avisos</h1>
+		<p class="page-subtitle">Lo que el usuario ve en el portal de inicio antes de reportar un problema.</p>
+	</div>
+</div>
+
+<div class="flex flex-col gap-6">
+
+	<!-- ── Estado de servicios ────────────────────────────────────────── -->
+	<div class="page-card">
+		<p class="section-label mb-3">Estado de servicios</p>
+
+		@if (loadingStatus) {
+			<p class="text-sm text-gray-400 m-0">Cargando…</p>
+		} @else {
+			<div class="flex flex-col gap-3">
+				@for (row of listServiceStatus; track row.idServiceStatus) {
+					<div class="status-row">
+						<div class="status-row-name">
+							<i class="pi" [class]="row.icon" [style.color]="STATUS_COLORS[row.status]"></i>
+							{{row.name}}
+						</div>
+
+						<p-select
+							[(ngModel)]="row.status"
+							[options]="STATUS_OPTIONS"
+							optionLabel="label"
+							optionValue="value"
+							styleClass="status-row-select" />
+
+						<input type="text" pInputText [(ngModel)]="row.note" placeholder="Nota opcional (ej. lentitud en el edificio B)" class="status-row-note" />
+
+						<p-button label="Guardar" size="small" [outlined]="true" [loading]="savingStatusId === row.idServiceStatus" (click)="saveStatus(row)" />
+					</div>
+				}
+			</div>
+		}
+	</div>
+
+	<!-- ── Publicar aviso ─────────────────────────────────────────────── -->
+	<div class="page-card">
+		<p class="section-label mb-3">Publicar un aviso</p>
+
+		<div class="flex flex-col gap-3 w-full">
+			<input type="text" pInputText [(ngModel)]="newAnnouncement.title" placeholder="Título — ej. Mantenimiento programado de correo" class="w-full" />
+			<textarea pTextarea rows="2" [(ngModel)]="newAnnouncement.message" placeholder="Mensaje — ej. Sábado 22:00 a 00:00, el correo no estará disponible." class="w-full"></textarea>
+
+			<div class="flex flex-wrap gap-3">
+				<p-select [(ngModel)]="newAnnouncement.severity" [options]="SEVERITY_OPTIONS" optionLabel="label" optionValue="value" styleClass="w-44" />
+
+				<div class="flex flex-col gap-1">
+					<label class="text-xs text-gray-400">Desde (opcional)</label>
+					<input type="datetime-local" pInputText [(ngModel)]="newAnnouncement.startsAt" />
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-xs text-gray-400">Hasta (opcional)</label>
+					<input type="datetime-local" pInputText [(ngModel)]="newAnnouncement.endsAt" />
+				</div>
+			</div>
+
+			<p-button label="Publicar aviso" icon="pi pi-megaphone" styleClass="w-fit" [loading]="sendingAnnouncement" [disabled]="!canSubmitAnnouncement" (click)="submitAnnouncement()" />
+		</div>
+	</div>
+
+	<!-- ── Avisos publicados ──────────────────────────────────────────── -->
+	<div class="page-card">
+		<p class="section-label mb-3">Avisos publicados</p>
+
+		@if (loadingAnnouncements) {
+			<p class="text-sm text-gray-400 m-0">Cargando…</p>
+		} @else if (listAnnouncement.length === 0) {
+			<div class="empty-state !py-6">
+				<i class="pi pi-megaphone"></i>
+				<p class="text-sm m-0">No hay avisos publicados.</p>
+			</div>
+		} @else {
+			<div class="flex flex-col gap-2">
+				@for (a of listAnnouncement; track a.idAnnouncement) {
+					<div class="announcement-row">
+						<span class="announcement-row-severity" [style.backgroundColor]="SEVERITY_COLORS[a.severity] + '1A'" [style.color]="SEVERITY_COLORS[a.severity]">
+							{{a.severity}}
+						</span>
+						<div class="announcement-row-text">
+							<strong>{{a.title}}</strong>
+							<span class="text-gray-500"> — {{a.message}}</span>
+						</div>
+						<p-button icon="pi pi-times" [text]="true" severity="danger" size="small" pTooltip="Retirar aviso" tooltipPosition="top" (click)="confirmDeactivate(a)" />
+					</div>
+				}
+			</div>
+		}
+	</div>
+
+</div>

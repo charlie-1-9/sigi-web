@@ -1,0 +1,263 @@
+<div class="max-w-2xl mx-auto">
+<a class="back-link" routerLink="/">
+	<i class="pi pi-arrow-left"></i> Volver al inicio
+</a>
+
+@if (submittedTicketCode) {
+	<!-- ── Confirmación ────────────────────────────────────────────────── -->
+	<div class="page-card w-full confirmation-panel">
+		<i class="pi pi-check-circle confirmation-icon"></i>
+		<h1 class="page-title text-center mb-1">¡Listo, lo registramos!</h1>
+		<p class="page-subtitle text-center mb-4">Te avisaremos en cuanto un técnico lo revise.</p>
+
+		<div class="ticket-code-box">
+			<span class="text-xs text-gray-400">Tu código de seguimiento</span>
+			<span class="ticket-code">{{submittedTicketCode}}</span>
+		</div>
+
+		<div class="flex items-center justify-center gap-3 mt-5">
+			<p-button label="Ver mis solicitudes" icon="pi pi-list" [outlined]="true" routerLink="/incident/list" />
+			<p-button label="Reportar otro problema" icon="pi pi-plus" (click)="startNewReport()" />
+		</div>
+	</div>
+} @else {
+
+<div class="page-card w-full">
+	<h1 class="page-title mb-1">Reportar un problema</h1>
+	<p class="page-subtitle mb-4">Cuéntanos qué pasa y te ayudamos a resolverlo.</p>
+
+	<!-- Progreso del asistente: "Paso X de 4 · <lo que se está pidiendo>" en
+	     vez de una sola pantalla larga — da sensación de avance real. -->
+	<div class="wizard-progress mb-6">
+		<div class="wizard-steps">
+			@for (label of stepLabels; track label; let i = $index) {
+				<div class="wizard-step" [class.wizard-step--done]="currentStep > i + 1" [class.wizard-step--active]="currentStep === i + 1">
+					<span class="wizard-step-dot">
+						@if (currentStep > i + 1) { <i class="pi pi-check"></i> } @else { {{i + 1}} }
+					</span>
+				</div>
+				@if (i < stepLabels.length - 1) {
+					<div class="wizard-step-line" [class.wizard-step-line--done]="currentStep > i + 1"></div>
+				}
+			}
+		</div>
+		<p class="wizard-progress-label">Paso {{currentStep}} de {{totalSteps}} · {{currentStepLabel}}</p>
+	</div>
+
+	<form [formGroup]="frmInsertIncident" (ngSubmit)="sendInsertIncident($event)" class="flex flex-col gap-4">
+
+		<!-- Paso 1 · Tipo: Problema o Solicitud -->
+		@if (currentStep === 1) {
+			<div class="flex flex-col gap-3 wizard-fade-in">
+				<p class="text-sm text-gray-500 m-0 mb-1">Para orientarte mejor, cuéntanos primero de qué se trata.</p>
+
+				<button type="button" class="type-choice" [class.type-choice--active]="requestType === 'problema'" (click)="requestType = 'problema'">
+					<i class="pi pi-wrench"></i>
+					<div>
+						<strong>Tengo un problema</strong>
+						<p>Algo dejó de funcionar — Wi-Fi caído, no puedo entrar a mi correo, un equipo con fallas…</p>
+					</div>
+				</button>
+
+				<button type="button" class="type-choice" [class.type-choice--active]="requestType === 'solicitud'" (click)="requestType = 'solicitud'">
+					<i class="pi pi-inbox"></i>
+					<div>
+						<strong>Necesito algo</strong>
+						<p>Instalar un software, crear una cuenta, pedir un equipo, solicitar acceso…</p>
+					</div>
+				</button>
+			</div>
+		}
+
+		<!-- Paso 2 · Servicio (categoría + campos dinámicos) -->
+		@if (currentStep === 2) {
+			<div class="flex flex-col gap-4 wizard-fade-in">
+				<div class="flex flex-col gap-1">
+					<label for="category">¿Sobre qué servicio?</label>
+					<p-select
+						id="category"
+						formControlName="category"
+						[options]="listCategory"
+						optionLabel="name"
+						optionValue="idCategory"
+						placeholder="Selecciona una opción"
+						styleClass="w-full">
+						<ng-template let-item pTemplate="item">
+							<div class="flex items-center gap-2">
+								<i class="pi" [class]="item.icon" [style.color]="item.color"></i>
+								<span>{{item.name}}</span>
+							</div>
+						</ng-template>
+					</p-select>
+					@if (categoryFb.invalid && categoryFb.touched) {
+						<small class="text-red-500">Selecciona una opción para continuar.</small>
+					}
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label for="title">Resume el problema en pocas palabras</label>
+					<input id="title" type="text" pInputText formControlName="title" class="w-full" placeholder="Ej. No puedo conectarme al Wi-Fi" />
+					@if (titleFb.invalid && titleFb.touched) {
+						<small class="text-red-500">Escribe al menos 5 caracteres.</small>
+					}
+				</div>
+
+				@for (field of extraFieldsSchema; track field.key) {
+					<div class="flex flex-col gap-1">
+						<label [for]="field.key">{{field.label}}@if (field.required) { <span class="text-red-500">*</span> }</label>
+						<input
+							[id]="field.key"
+							type="text"
+							pInputText
+							class="w-full"
+							[(ngModel)]="extraFieldValues[field.key]"
+							[ngModelOptions]="{ standalone: true }" />
+						@if (field.required && extraFieldsTouched && !extraFieldValues[field.key]) {
+							<small class="text-red-500">Este dato nos ayuda a atenderte más rápido.</small>
+						}
+					</div>
+				}
+
+				<div class="flex flex-col gap-1">
+					<label for="location">Ubicación (opcional)</label>
+					<input id="location" type="text" pInputText formControlName="location" class="w-full" placeholder="Ej. Laboratorio 2, pabellón C" />
+				</div>
+			</div>
+		}
+
+		<!-- Paso 3 · Descripción (+ preguntas de impacto → prioridad calculada) -->
+		@if (currentStep === 3) {
+			<div class="flex flex-col gap-4 wizard-fade-in">
+				<div class="flex flex-col gap-1">
+					<label for="description">Describe el problema con más detalle</label>
+					<textarea id="description" pTextarea formControlName="description" rows="4" class="w-full" placeholder="¿Qué intentaste hacer? ¿Qué pasó en vez de eso?"></textarea>
+					@if (descriptionFb.invalid && descriptionFb.touched) {
+						<small class="text-red-500">Escribe al menos 10 caracteres.</small>
+					}
+				</div>
+
+				<!-- No se pregunta "prioridad" directamente — es un concepto
+				     técnico. Estas 3 preguntas, en el lenguaje del usuario, son
+				     lo que el sistema traduce a una prioridad por sí solo. -->
+				<div class="impact-questions">
+					<p class="section-label mb-2">Para saber qué tan urgente es</p>
+
+					<div class="flex flex-col gap-1 mb-3">
+						<label>¿A cuántas personas afecta?</label>
+						<div class="flex flex-wrap gap-2">
+							<button type="button" class="choice-chip" [class.choice-chip--active]="impactScope === 'solo'" (click)="impactScope = 'solo'">Solo a mí</button>
+							<button type="button" class="choice-chip" [class.choice-chip--active]="impactScope === 'grupo'" (click)="impactScope = 'grupo'">A mi equipo o aula</button>
+							<button type="button" class="choice-chip" [class.choice-chip--active]="impactScope === 'area'" (click)="impactScope = 'area'">A toda un área o edificio</button>
+						</div>
+					</div>
+
+					<div class="flex flex-col gap-1 mb-3">
+						<label>¿Te impide hacer algo importante ahora mismo?</label>
+						<div class="flex flex-wrap gap-2">
+							<button type="button" class="choice-chip" [class.choice-chip--active]="isBlocking === true" (click)="isBlocking = true">Sí, no puedo continuar</button>
+							<button type="button" class="choice-chip" [class.choice-chip--active]="isBlocking === false" (click)="isBlocking = false">No, puedo esperar</button>
+						</div>
+					</div>
+
+					<div class="flex flex-col gap-1">
+						<label>¿Desde cuándo ocurre?</label>
+						<div class="flex flex-wrap gap-2">
+							<button type="button" class="choice-chip" [class.choice-chip--active]="sinceWhen === 'ahora'" (click)="sinceWhen = 'ahora'">Recién ahora</button>
+							<button type="button" class="choice-chip" [class.choice-chip--active]="sinceWhen === 'horas'" (click)="sinceWhen = 'horas'">Hace unas horas</button>
+							<button type="button" class="choice-chip" [class.choice-chip--active]="sinceWhen === 'dia'" (click)="sinceWhen = 'dia'">Hace más de un día</button>
+						</div>
+					</div>
+
+					@if (impactQuestionsAnswered) {
+						<p class="calculated-priority-note wizard-fade-in">
+							<i class="pi pi-sparkles"></i>
+							Con esto, marcaremos tu solicitud como prioridad <strong>{{calculatedPriorityName}}</strong>. Un técnico puede ajustarla si hace falta.
+						</p>
+					}
+				</div>
+			</div>
+		}
+
+		<!-- Paso 4 · Evidencia, revisión y envío -->
+		@if (currentStep === 4) {
+			<div class="flex flex-col gap-4 wizard-fade-in">
+				<div class="flex flex-col gap-2">
+					<label>¿Tienes una foto o captura del problema?</label>
+					<p class="text-sm text-gray-500 m-0 mb-1">Es opcional, pero ayuda al técnico a entender el problema más rápido. Puedes tomarla con la cámara de tu celular.</p>
+
+					<div class="flex items-center gap-3" *ngFor="let element of fileRowList">
+						<p-fileUpload
+							mode="basic"
+							chooseLabel="Seleccionar archivo…"
+							[auto]="true"
+							[multiple]="false"
+							accept="image/*,.pdf"
+							(onSelect)="onFileSelect($event, element.id)" />
+
+						@if (fileFor(element.id); as f) {
+							<div class="file-preview wizard-pop-in">
+								@if (f.mimeType?.startsWith('image/')) {
+									<img [src]="f.dataUrl" alt="" />
+								} @else {
+									<i class="pi pi-file"></i>
+								}
+								<span class="file-preview-name">{{f.fileName}}</span>
+								<i class="pi pi-check-circle file-preview-check"></i>
+							</div>
+						}
+
+						<button type="button" pButton icon="pi pi-times" severity="danger" [text]="true" [attr.aria-label]="'Quitar adjunto ' + fileFor(element.id)?.fileName" pTooltip="Quitar adjunto" tooltipPosition="top" (click)="removeFile(element)"></button>
+					</div>
+
+					<p-button type="button" label="Agregar adjunto" icon="pi pi-paperclip" size="small" severity="secondary" [outlined]="true" styleClass="w-fit" (click)="addFile()" />
+				</div>
+
+				<div class="wizard-summary">
+					<div class="wizard-summary-row">
+						<span class="wizard-summary-label">Tipo</span>
+						<span class="wizard-summary-value">{{requestType === 'solicitud' ? 'Necesito algo' : 'Tengo un problema'}}</span>
+					</div>
+					<div class="wizard-summary-row">
+						<span class="wizard-summary-label">Servicio</span>
+						<span class="wizard-summary-value">
+							@if (selectedCategory) {
+								<i class="pi" [class]="selectedCategory.icon" [style.color]="selectedCategory.color"></i>
+							}
+							{{selectedCategory?.name || '—'}}
+						</span>
+					</div>
+					<div class="wizard-summary-row">
+						<span class="wizard-summary-label">Resumen</span>
+						<span class="wizard-summary-value">{{titleFb.value || '—'}}</span>
+					</div>
+					<div class="wizard-summary-row">
+						<span class="wizard-summary-label">Prioridad estimada</span>
+						<span class="wizard-summary-value">{{calculatedPriorityName || '—'}}</span>
+					</div>
+				</div>
+			</div>
+		}
+
+		<!-- Navegación del asistente -->
+		<div class="flex items-center justify-between mt-2">
+			@if (currentStep > 1) {
+				<p-button type="button" label="Atrás" icon="pi pi-arrow-left" size="small" severity="secondary" [outlined]="true" (click)="goBack()" />
+			} @else {
+				<span></span>
+			}
+
+			@if (currentStep < totalSteps) {
+				<p-button type="button" label="Siguiente" icon="pi pi-arrow-right" iconPos="right" size="small" (click)="goNext()" />
+			} @else {
+				<div class="flex items-center gap-2">
+					@if (sending) {
+						<span class="text-xs text-gray-500">Enviando tu solicitud…</span>
+					}
+					<p-button type="submit" label="Enviar" icon="pi pi-send" [loading]="sending" />
+				</div>
+			}
+		</div>
+	</form>
+</div>
+}
+</div>

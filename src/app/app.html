@@ -1,0 +1,129 @@
+<p-toast />
+<p-confirmdialog header="Confirmación" />
+
+<div class="layout-container">
+	@if (!isLoginPage) {
+		<header class="layout-topbar">
+
+			<!-- Menú móvil -->
+			<button class="hamburger-btn" (click)="mobileMenuOpen = true" aria-label="Abrir menú">
+				<i class="pi pi-bars"></i>
+			</button>
+
+			<!-- Logo -->
+			<div class="topbar-left">
+				<i class="pi pi-ticket app-logo-icon"></i>
+				<span class="app-logo">SIGI · OTI</span>
+			</div>
+
+			<!-- Menú principal -->
+			<nav class="topbar-menu">
+				@for(value of menuOptions; track value.route) {
+					<a [routerLink]="value.route" [ngClass]="{
+						'active-menu': value.active
+					}">
+						<i class="pi pi-{{value.icon}}"></i>
+						<span>{{navLabel(value)}}</span>
+					</a>
+				}
+			</nav>
+
+			<!-- Opciones usuario -->
+			<div class="topbar-right">
+				<button class="icon-btn" (click)="toggleDarkMode()" [attr.aria-label]="darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
+					<i class="pi" [ngClass]="darkMode ? 'pi-sun' : 'pi-moon'"></i>
+				</button>
+
+				<button class="icon-btn" (click)="notifPopover.toggle($event)" aria-label="Notificaciones" pBadge [value]="unreadCount > 0 ? unreadCount : ''" severity="danger">
+					<i class="pi pi-bell"></i>
+				</button>
+
+				<p-popover #notifPopover styleClass="notif-popover" appendTo="body">
+					<div class="notif-header">
+						<span>Notificaciones</span>
+						@if (unreadCount > 0) {
+							<button class="notif-mark-all" (click)="markAllNotificationsRead()">Marcar todas como leídas</button>
+						}
+					</div>
+
+					<div class="notif-list">
+						@if (listNotification.length === 0) {
+							<div class="notif-empty">
+								<i class="pi pi-bell-slash"></i>
+								<p class="m-0 text-sm">No tienes notificaciones.</p>
+							</div>
+						} @else {
+							@for (n of listNotification; track n.idHistory) {
+								<button class="notif-item" [class.unread]="!n.read" (click)="notifPopover.hide(); openNotification(n)">
+									<span class="notif-dot" [class.visible]="!n.read"></span>
+									<div class="notif-item-body">
+										<p class="notif-item-title">{{n.ticketCode ? (n.ticketCode + ' · ' + n.title) : n.title}}</p>
+										<p class="notif-item-message">{{n.message}}</p>
+									</div>
+								</button>
+							}
+						}
+					</div>
+				</p-popover>
+
+				<div class="user-profile" (click)="menu.toggle($event)">
+					<p-avatar
+						[label]="(fullName || 'U').charAt(0)"
+						shape="circle"
+						style="background-color: #1E3A5F; color: #fff;" />
+
+					<span class="username">{{fullName || 'Usuario'}}</span>
+					<span class="user-role">{{role}}</span>
+					<i class="pi pi-angle-down"></i>
+				</div>
+
+				<p-menu
+					#menu
+					[model]="profileItems"
+					[popup]="true"
+					appendTo="body" />
+			</div>
+		</header>
+
+		<p-drawer [(visible)]="mobileMenuOpen" position="left" header="SIGI · OTI" styleClass="mobile-drawer">
+			<nav class="drawer-nav">
+				@for(value of menuOptions; track value.route) {
+					<a [routerLink]="value.route" [ngClass]="{ 'active-menu': value.active }">
+						<i class="pi pi-{{value.icon}}"></i>
+						<span>{{navLabel(value)}}</span>
+					</a>
+				}
+			</nav>
+
+			<div class="drawer-footer">
+				<div class="flex align-items-center gap-2 mb-2">
+					<p-avatar [label]="(fullName || 'U').charAt(0)" shape="circle" style="background-color: #1E3A5F; color: #fff;" />
+					<div class="min-w-0">
+						<p class="m-0 text-sm font-medium">{{fullName || 'Usuario'}}</p>
+						<p class="m-0 text-xs text-gray-400">{{role}}</p>
+					</div>
+				</div>
+				<button class="logout-btn-mobile mb-1" (click)="notifPopover.toggle($event)">
+					<i class="pi pi-bell"></i> Notificaciones
+					@if (unreadCount > 0) {
+						<span class="notif-badge-inline">{{unreadCount}}</span>
+					}
+				</button>
+				<button class="logout-btn-mobile mb-1" (click)="toggleDarkMode()">
+					<i class="pi" [ngClass]="darkMode ? 'pi-sun' : 'pi-moon'"></i> {{ darkMode ? 'Modo claro' : 'Modo oscuro' }}
+				</button>
+				<button class="logout-btn-mobile" (click)="logout()">
+					<i class="pi pi-sign-out"></i> Cerrar sesión
+				</button>
+			</div>
+		</p-drawer>
+	}
+
+	<div class="layout-body">
+		<main class="layout-main">
+			<div class="content-wrapper">
+				<router-outlet />
+			</div>
+		</main>
+	</div>
+</div>

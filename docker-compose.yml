@@ -1,0 +1,18 @@
+services:
+  sigi-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sigi-web:latest
+    container_name: sigi-web
+    ports:
+      # Host:Contenedor — mismo puerto 8088 usado en la prueba manual con
+      # Nginx nativo (ver DEPLOY.md), para que el resultado sea comparable.
+      - '8088:80'
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost/assets/status.json']
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3

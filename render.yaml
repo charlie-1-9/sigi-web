@@ -1,0 +1,50 @@
+# Blueprint de Render para el frontend de SIGI-OTI (Angular, sitio estático).
+#
+# Este archivo asume que ESTE repo (sigi-web) es un repo Git separado del
+# backend (sigi-oti-api), con este render.yaml en su raíz. Si en cambio
+# tienes ambos proyectos en un solo repo (monorepo), usa `rootDir` en cada
+# servicio y un único render.yaml compartido — no es el caso aquí.
+#
+# Cómo usarlo:
+#   1. Sube este repo a GitHub/GitLab (con este archivo en la raíz).
+#   2. En Render: New + → Blueprint → conecta el repo. Render detecta este
+#      render.yaml.
+#   3. Deploy.
+#
+# ⚠️ API_URL de abajo asume que el backend queda en
+# https://sigi-oti-api.onrender.com (la URL que Render le asignaría por
+# defecto al Blueprint del OTRO repo, sigi-oti-api, si usa ese mismo
+# "name"). Verifica la URL real del backend después de desplegarlo y, si
+# difiere, actualiza esta variable aquí (dashboard → servicio sigi-web →
+# Environment) y guarda — eso dispara un rebuild automático, que vuelve a
+# generar environment.production.ts (ver scripts/render-set-api-url.mjs).
+# Después de eso, actualiza también APP_CORS_ALLOWED_ORIGINS en el
+# render.yaml del backend con la URL real de este frontend.
+
+services:
+  - type: web
+    name: sigi-web
+    runtime: static
+    buildCommand: npm ci && node scripts/render-set-api-url.mjs && npm run build
+    staticPublishPath: ./dist/sigi-web/browser
+    envVars:
+      # ⚠️ Ver nota arriba: ajustar tras el primer deploy del backend si su
+      # URL real difiere de la que Render asigna por defecto. Sin "/" al
+      # final.
+      - key: API_URL
+        value: https://sigi-oti-api.onrender.com
+    routes:
+      # SPA de Angular: cualquier ruta que no sea un archivo real cae a
+      # index.html para que el router de Angular la resuelva en el cliente.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      # Los archivos con hash en el nombre (main-XXXX.js, etc.) son
+      # inmutables entre builds — se pueden cachear "para siempre".
+      - path: /*.js
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*.css
+        name: Cache-Control
+        value: public, max-age=31536000, immutable

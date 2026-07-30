@@ -1,0 +1,186 @@
+<div class="page-card w-full">
+	<div class="page-header !mb-4">
+		<div>
+			<h1 class="page-title">
+				{{ role === 'Solicitante' ? 'Mis solicitudes' : role === 'Técnico' ? 'Mis Asignaciones' : 'Todas las Incidencias' }}
+			</h1>
+			<p class="page-subtitle">{{ filteredList.length }} incidencia{{ filteredList.length !== 1 ? 's' : '' }}</p>
+		</div>
+
+		<div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+			<input type="text" pInputText placeholder="Buscar por ticket o título…" [(ngModel)]="search" class="w-full sm:w-auto" />
+			<p-select [options]="statusOptions" optionLabel="name" optionValue="name" [(ngModel)]="filterStatus" styleClass="w-full sm:w-auto" />
+			@if (listPriority.length > 0) {
+				<p-select
+					[options]="[{ name: 'Todos' }].concat(listPriority)"
+					optionLabel="name"
+					optionValue="name"
+					[(ngModel)]="filterPriority"
+					placeholder="Prioridad"
+					styleClass="w-full sm:w-auto" />
+			}
+			<div class="flex gap-2">
+				<button pButton icon="pi pi-file-excel" label="Excel" severity="secondary" [outlined]="true" size="small" (click)="exportExcel()"></button>
+				<button pButton icon="pi pi-file-pdf" label="PDF" severity="secondary" [outlined]="true" size="small" (click)="exportPdf()"></button>
+			</div>
+		</div>
+	</div>
+
+	<p class="table-scroll-hint hidden md:block">Desliza horizontalmente para ver todas las columnas en pantallas pequeñas →</p>
+
+	<div class="table-scroll-wrapper hidden md:block">
+		<p-table [value]="filteredList" [loading]="loading" [paginator]="true" [rows]="10">
+		<ng-template pTemplate="header">
+			<tr>
+				<th>Ticket</th>
+				<th>Título</th>
+				<th>Categoría</th>
+				<th>Prioridad</th>
+				<th>Estado</th>
+				@if (role !== 'Solicitante') { <th>Solicitante</th> }
+				@if (role !== 'Técnico') { <th>Técnico</th> }
+				<th>Fecha</th>
+				<th><span class="sr-only">Acciones</span></th>
+			</tr>
+		</ng-template>
+		<ng-template pTemplate="body" let-item>
+			<tr>
+				<td><span class="font-mono-ticket text-sm font-medium">{{item.ticketCode}}</span></td>
+				<td class="max-w-xs truncate">{{item.title}}</td>
+				<td>
+					<span class="flex items-center gap-2">
+						@if (categoryMeta[item.category]; as meta) {
+							<i class="pi" [class]="meta.icon" [style.color]="meta.color"></i>
+						}
+						{{item.category}}
+					</span>
+				</td>
+				<td>
+					@if (role === 'Técnico') {
+						<p-select
+							[options]="listPriority"
+							optionLabel="name"
+							optionValue="idPriority"
+							[ngModel]="item.idPriority"
+							[disabled]="updatingRow === item.idIncident"
+							(onChange)="updatePriority(item, $event.value)"
+							styleClass="w-28" />
+					} @else {
+						<p-tag [value]="item.priority" [style]="{ backgroundColor: PRIORITY_COLORS[item.priority] + '1A', color: PRIORITY_COLORS[item.priority] }" />
+					}
+				</td>
+				<td>
+					@if (role === 'Técnico') {
+						<p-select
+							[options]="technicianStatusOptions"
+							optionLabel="name"
+							optionValue="name"
+							[ngModel]="item.status"
+							[disabled]="updatingRow === item.idIncident"
+							(onChange)="updateStatus(item, $event.value)"
+							styleClass="w-36" />
+					} @else {
+						<p-tag [value]="item.status" [style]="{ backgroundColor: STATUS_COLORS[item.status] + '1A', color: STATUS_COLORS[item.status] }" />
+					}
+				</td>
+				@if (role !== 'Solicitante') { <td>{{item.requesterFullName}}</td> }
+				@if (role !== 'Técnico') {
+					<td>
+						@if (item.technicianFullName) {
+							{{item.technicianFullName}}
+						} @else if (role === 'Administrador OTI' && item.status === 'Nueva') {
+							<div class="flex items-center gap-1">
+								<p-select
+									[options]="listTechnician"
+									optionLabel="fullName"
+									optionValue="idUser"
+									placeholder="Técnico…"
+									[(ngModel)]="assignSelection[item.idIncident]"
+									styleClass="w-36" />
+								<button pButton icon="pi pi-check" size="small" [loading]="assigningRow === item.idIncident" [attr.aria-label]="'Confirmar asignación de técnico para ' + item.ticketCode" pTooltip="Confirmar asignación" tooltipPosition="top" (click)="assignIncident(item)"></button>
+							</div>
+						} @else {
+							<span class="text-gray-400 text-sm">Sin asignar</span>
+						}
+					</td>
+				}
+				<td class="text-sm text-gray-500">
+					{{item.createdAt}}
+					@if (slaInfo(item); as sla) {
+						<span class="sla-badge" [class.sla-badge--overdue]="sla.overdue" [pTooltip]="sla.overdue ? 'SLA vencido' : 'Tiempo restante de SLA'" tooltipPosition="top">
+							<i class="pi" [class]="sla.overdue ? 'pi-exclamation-triangle' : 'pi-clock'"></i>
+							{{sla.overdue ? ('Vencido +' + (-sla.hoursLeft) + 'h') : (sla.hoursLeft + 'h restantes')}}
+						</span>
+					}
+				</td>
+				<td>
+					<button pButton icon="pi pi-eye" [text]="true" size="small" [attr.aria-label]="'Ver seguimiento de ' + item.ticketCode" [pTooltip]="'Ver seguimiento'" tooltipPosition="top" (click)="openFollowUp(item.ticketCode)"></button>
+				</td>
+			</tr>
+		</ng-template>
+		<ng-template pTemplate="emptymessage">
+			<tr>
+				<td [attr.colspan]="role === 'Administrador OTI' ? 9 : 8">
+					<div class="empty-state">
+						@if (listIncident.length > 0) {
+							<i class="pi pi-filter-slash"></i>
+							<p class="text-sm m-0">Ninguna incidencia coincide con el filtro actual.</p>
+						} @else if (role === 'Solicitante') {
+							<i class="pi pi-inbox"></i>
+							<p class="text-sm m-0 mb-1">Aún no tienes solicitudes registradas.</p>
+							<p class="text-xs text-gray-400 m-0">Si algo falla, te ayudamos a resolverlo.</p>
+						} @else {
+							<i class="pi pi-inbox"></i>
+							<p class="text-sm m-0">No hay incidencias registradas todavía.</p>
+						}
+					</div>
+				</td>
+			</tr>
+		</ng-template>
+	</p-table>
+	</div>
+
+	<!-- Vista de tarjetas para móvil — la tabla con scroll horizontal es
+	     incómoda en un teléfono; en pantallas angostas se usa esto en su
+	     lugar. La edición inline de prioridad/estado del Técnico se hace
+	     desde el detalle (botón "Ver"), no duplicada aquí. -->
+	<div class="block md:hidden flex flex-col gap-3">
+		@if (loading) {
+			<p class="text-sm text-gray-400 text-center py-6">Cargando…</p>
+		} @else if (filteredList.length === 0) {
+			<div class="empty-state">
+				<i class="pi pi-inbox"></i>
+				<p class="text-sm m-0">No se encontraron incidencias.</p>
+			</div>
+		} @else {
+			@for (item of filteredList; track item.idIncident) {
+				<div class="incident-card">
+					<div class="incident-card-top">
+						<span class="font-mono-ticket text-xs text-gray-400">{{item.ticketCode}}</span>
+						<p-tag [value]="item.status" [style]="{ backgroundColor: STATUS_COLORS[item.status] + '1A', color: STATUS_COLORS[item.status] }" />
+					</div>
+					<p class="incident-card-title">{{item.title}}</p>
+					<p class="incident-card-meta">
+						@if (categoryMeta[item.category]; as meta) {
+							<i class="pi" [class]="meta.icon" [style.color]="meta.color"></i>
+						}
+						{{item.category}}
+						@if (role !== 'Técnico' && item.technicianFullName) { · {{item.technicianFullName}} }
+					</p>
+					<div class="incident-card-bottom">
+						<div class="flex items-center gap-2">
+							<span class="text-xs text-gray-400">{{item.createdAt}}</span>
+							@if (slaInfo(item); as sla) {
+								<span class="sla-badge" [class.sla-badge--overdue]="sla.overdue">
+									<i class="pi" [class]="sla.overdue ? 'pi-exclamation-triangle' : 'pi-clock'"></i>
+									{{sla.overdue ? ('Vencido +' + (-sla.hoursLeft) + 'h') : (sla.hoursLeft + 'h')}}
+								</span>
+							}
+						</div>
+						<button pButton label="Ver" icon="pi pi-eye" size="small" [text]="true" [attr.aria-label]="'Ver seguimiento de ' + item.ticketCode" (click)="openFollowUp(item.ticketCode)"></button>
+					</div>
+				</div>
+			}
+		}
+	</div>
+</div>

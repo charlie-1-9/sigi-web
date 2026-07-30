@@ -1,0 +1,94 @@
+.table-scroll-wrapper {
+	width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.table-scroll-hint {
+	font-size: 0.75rem;
+	color: #94a3b8;
+	margin: 0 0 0.5rem 0;
+}
+
+/* ── Tarjetas de incidencia (vista móvil) ────────────────────────────── */
+
+.incident-card {
+	background: #ffffff;
+	border: 1px solid #eef0f3;
+	border-radius: 14px;
+	padding: 0.9rem;
+	box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+}
+
+.incident-card-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.4rem;
+}
+
+.incident-card-title {
+	margin: 0 0 0.3rem 0;
+	font-size: 0.9rem;
+	font-weight: 500;
+	color: #16202B;
+}
+
+.incident-card-meta {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	margin: 0;
+	font-size: 0.75rem;
+	color: #64748b;
+}
+
+.incident-card-bottom {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 0.6rem;
+	padding-top: 0.6rem;
+	border-top: 1px solid #f1f5f9;
+}
+
+/* Objetivo táctil mínimo de 44×44px (punto de accesibilidad) para el
+   botón "Ver" en la tarjeta móvil, donde es la acción principal. */
+.incident-card-bottom button {
+	min-height: 44px;
+	min-width: 44px;
+}
+
+.my-app-dark .incident-card {
+	background: #16202B;
+	border-color: #2a3644;
+}
+
+.my-app-dark .incident-card-title {
+	color: #f1f5f9;
+}
+
+.my-app-dark .incident-card-bottom {
+	border-top-color: #2a3644;
+}
+
+/* ── Indicador de SLA (bandeja de atención) ─────────────────────────── */
+
+.sla-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	margin-left: 0.5rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	color: #0F7C6C;
+	background: #0F7C6C1A;
+	border-radius: 999px;
+	padding: 0.15rem 0.55rem;
+	white-space: nowrap;
+}
+
+.sla-badge--overdue {
+	color: #ef4444;
+	background: #ef44441A;
+}

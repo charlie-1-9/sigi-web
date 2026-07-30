@@ -1,0 +1,187 @@
+<div class="max-w-2xl mx-auto">
+	<a class="back-link" routerLink="/">
+		<i class="pi pi-arrow-left"></i> Volver al inicio
+	</a>
+
+	<div class="page-card w-full mb-4">
+		<h1 class="page-title mb-1">{{role === 'Solicitante' ? 'Ver mi solicitud' : 'Detalle de incidencia'}}</h1>
+		<p class="page-subtitle mb-4">Ingresa el código de ticket para ver su estado, historial y comentarios.</p>
+
+		<form [formGroup]="frmFollowUp" (ngSubmit)="searchIncident()" class="flex gap-2">
+			<input type="text" pInputText formControlName="code" placeholder="Ej. INC-2026-0001" class="flex-1" />
+			<p-button type="submit" label="Buscar" icon="pi pi-search" [loading]="loadingLookup" />
+		</form>
+	</div>
+
+@if (dataResponse) {
+
+	<!-- 1 · Estado y próxima acción — lo primero que se ve, antes que
+	       cualquier otro detalle. Nunca depende solo del color: siempre
+	       texto + ícono + una explicación breve. -->
+	<div class="page-card w-full mb-4">
+		<div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+			<p class="font-mono-ticket text-xs text-gray-400 m-0">{{dataResponse.ticketCode}}</p>
+			<p-tag [value]="displayStatus.label" [icon]="'pi ' + displayStatus.icon" [style]="{ backgroundColor: STATUS_COLORS[dataResponse.status] + '1A', color: STATUS_COLORS[dataResponse.status] }" />
+		</div>
+
+		@if (displayStatus.explanation) {
+			<p class="text-xs text-gray-400 mt-0 mb-3">{{displayStatus.explanation}}</p>
+		}
+
+		@if (waitingMessage) {
+			<div class="waiting-banner">
+				<i class="pi pi-comment"></i>
+				<span>{{waitingMessage}}</span>
+			</div>
+		}
+
+		<!-- Acciones contextuales — lo que se puede HACER ahora, junto al estado -->
+		@if (canStart) {
+			<p-button label="Aceptar y comenzar atención" icon="pi pi-clock" size="small" [loading]="actionLoading" (click)="startWork()" styleClass="mt-3" />
+		}
+
+		@if (canResolve) {
+			<div class="flex flex-col gap-2 mt-3">
+				<textarea pTextarea [(ngModel)]="solutionText" rows="3" placeholder="Describe la solución aplicada…"></textarea>
+				<p-button label="Registrar solución y marcar resuelta" icon="pi pi-check-circle" size="small" [loading]="actionLoading" (click)="resolveIncident()" styleClass="w-fit" />
+			</div>
+		}
+
+		@if (canCloseOrReopen && !showReopen) {
+			<div class="flex gap-2 mt-3">
+				<p-button label="Confirmar y cerrar" icon="pi pi-check-circle" size="small" [loading]="actionLoading" (click)="closeIncident()" />
+				<p-button label="El problema persiste" icon="pi pi-refresh" size="small" severity="secondary" [outlined]="true" (click)="showReopen = true" />
+			</div>
+		}
+
+		@if (showReopen) {
+			<div class="flex flex-col gap-2 mt-3">
+				<textarea pTextarea [(ngModel)]="reopenReason" rows="2" placeholder="Cuéntanos por qué el problema no quedó resuelto…"></textarea>
+				<p-button label="Reabrir incidencia" size="small" severity="help" [loading]="actionLoading" (click)="reopenIncident()" styleClass="w-fit" />
+			</div>
+		}
+	</div>
+
+	<!-- 2 · Resumen del problema -->
+	<div class="page-card w-full mb-4">
+		<h2 class="text-lg font-medium m-0 mb-3">{{dataResponse.title}}</h2>
+
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
+			<div>
+				<p class="section-label">Solicitante</p>
+				<p class="m-0">{{dataResponse.requesterFullName}}</p>
+			</div>
+			<div>
+				<p class="section-label">Técnico asignado</p>
+				<p class="m-0">{{dataResponse.technicianFullName || 'Sin asignar'}}</p>
+			</div>
+			<div>
+				<p class="section-label">Categoría</p>
+				<p class="m-0">{{dataResponse.category}}</p>
+			</div>
+			<div>
+				<p class="section-label">Prioridad</p>
+				<p class="m-0">{{dataResponse.priority}}</p>
+			</div>
+		</div>
+
+		<p class="section-label">Descripción</p>
+		<p class="text-sm m-0">{{dataResponse.description}}</p>
+
+		@if (dataResponse.solution) {
+			<div class="solution-box mt-4">
+				<p class="text-xs uppercase mb-1 font-medium" style="color:#0F7C6C">{{role === 'Solicitante' ? 'Solución propuesta' : 'Solución registrada'}}</p>
+				<p class="text-sm m-0">{{dataResponse.solution}}</p>
+			</div>
+		}
+	</div>
+
+	<!-- 3 · Conversación -->
+	<div class="page-card w-full mb-4">
+		<p class="section-label mb-3 flex items-center gap-2"><i class="pi pi-comments"></i> Conversación</p>
+
+		<div class="flex flex-col gap-2 mb-3">
+			@if (listComment.length === 0) {
+				<p class="text-xs text-gray-400 m-0">Aún no hay comentarios.</p>
+			}
+			@for (c of listComment; track c.idIncidentComment) {
+				<div class="comment" [class.comment-internal]="c.internalComment">
+					<div class="flex justify-between mb-1">
+						<span class="text-xs font-medium text-gray-700">{{c.userFullName}}{{c.internalComment ? ' · nota interna' : ''}}</span>
+						<span class="text-xs text-gray-400">{{c.createdAt}}</span>
+					</div>
+					<p class="text-sm m-0">{{c.description}}</p>
+				</div>
+			}
+		</div>
+
+		@if (canComment) {
+			<div class="flex flex-col gap-2">
+				<textarea pTextarea [(ngModel)]="commentText" rows="2" placeholder="Escribe un comentario…"></textarea>
+				<div class="flex items-center justify-between">
+					@if (role === 'Técnico') {
+						<label class="flex items-center gap-2 text-xs text-gray-600">
+							<p-checkbox [(ngModel)]="internalComment" [binary]="true" />
+							Nota interna (no visible para el solicitante)
+						</label>
+					} @else {
+						<span></span>
+					}
+					<p-button label="Comentar" size="small" [loading]="loadingComment" (click)="insertComment()" />
+				</div>
+			</div>
+		}
+	</div>
+
+	<!-- 4 · Evidencias -->
+	@if (dataResponse.listFile?.length) {
+		<div class="page-card w-full mb-4">
+			<p class="section-label mb-3 flex items-center gap-2"><i class="pi pi-paperclip"></i> Evidencia adjunta</p>
+			<div class="attachments-grid">
+				@for (f of dataResponse.listFile; track f.idIncidentFile) {
+					@if (f.mimeType?.startsWith('image/')) {
+						<a [href]="f.dataUrl" [download]="f.fileName" class="attachment-thumb" [title]="f.fileName">
+							<img [src]="f.dataUrl" alt="" />
+							<span class="attachment-name">{{f.fileName}}</span>
+						</a>
+					} @else {
+						<a [href]="f.dataUrl" [download]="f.fileName" class="attachment-file" [title]="f.fileName">
+							<i class="pi pi-file"></i>
+							<span class="attachment-name">{{f.fileName}}</span>
+						</a>
+					}
+				}
+			</div>
+		</div>
+	}
+
+	<!-- 5 · Historial técnico — colapsado por defecto; no debe competir con
+	       el mensaje principal de arriba. <details> nativo: colapsable,
+	       accesible por teclado y sin necesitar estado propio en el
+	       componente. -->
+	@if (dataResponse.listHistory?.length) {
+		<details class="page-card w-full history-details">
+			<summary class="section-label flex items-center gap-2 cursor-pointer">
+				<i class="pi pi-clock"></i> Historial técnico completo
+			</summary>
+			<div class="timeline mt-3">
+				@for (h of dataResponse.listHistory; track h.idHistory; let last = $last) {
+					<div class="timeline-item">
+						<div class="timeline-marker">
+							<i class="pi" [class]="historyIcon(h.action)"></i>
+						</div>
+						@if (!last) { <div class="timeline-line"></div> }
+						<div class="timeline-content">
+							<p class="timeline-label">{{historyLabel(h.action)}}</p>
+							@if (h.previousValue) {
+								<p class="timeline-detail">{{h.previousValue}} → {{h.newValue}}</p>
+							}
+							<p class="timeline-date">{{h.createdAt}}</p>
+						</div>
+					</div>
+				}
+			</div>
+		</details>
+	}
+}
+</div>

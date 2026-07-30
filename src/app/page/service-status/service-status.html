@@ -1,0 +1,47 @@
+<a class="back-link" routerLink="/">
+	<i class="pi pi-arrow-left"></i> Volver al inicio
+</a>
+
+<div class="page-header">
+	<div>
+		<h1 class="page-title">Estado de servicios</h1>
+		<p class="page-subtitle">Antes de reportar un problema, revisa si ya sabemos de algo.</p>
+	</div>
+	<button type="button" class="refresh-btn" (click)="load()" [attr.aria-label]="'Actualizar estado'">
+		<i class="pi pi-refresh"></i> Actualizar
+	</button>
+</div>
+
+@if (loading) {
+	<p class="text-sm text-gray-400">Cargando…</p>
+} @else {
+	@if (allOperational && listServiceStatus.length > 0) {
+		<div class="all-ok-banner mb-4">
+			<i class="pi pi-check-circle"></i>
+			Todos los servicios están operativos.
+		</div>
+	}
+
+	<div class="service-status-grid">
+		@for (s of listServiceStatus; track s.idServiceStatus) {
+			<div class="page-card service-status-card">
+				<div class="flex items-center justify-between mb-2">
+					<div class="flex items-center gap-2">
+						<i class="pi" [class]="s.icon" style="font-size:1.1rem;color:var(--text-secondary,#64748b)"></i>
+						<span class="font-medium">{{s.name}}</span>
+					</div>
+					<span class="status-pill" [style.backgroundColor]="STATUS_META[s.status]?.color + '1A'" [style.color]="STATUS_META[s.status]?.color">
+						<i class="pi" [class]="STATUS_META[s.status]?.icon"></i>
+						{{STATUS_META[s.status]?.label || s.status}}
+					</span>
+				</div>
+
+				@if (s.note) {
+					<p class="text-xs text-gray-500 m-0 mb-2">{{s.note}}</p>
+				}
+
+				<p class="text-xs text-gray-400 m-0">Actualizado: {{s.updatedAt}}</p>
+			</div>
+		}
+	</div>
+}

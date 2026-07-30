@@ -1,0 +1,52 @@
+.refresh-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	background: none;
+	border: 1px solid var(--border-color, #eef0f3);
+	border-radius: 999px;
+	padding: 0.4rem 0.9rem;
+	font-size: 0.8rem;
+	color: var(--text-secondary, #64748b);
+	cursor: pointer;
+}
+
+.refresh-btn:hover {
+	border-color: var(--brand-600, #4c7398);
+	color: var(--brand-900, #1E3A5F);
+}
+
+.all-ok-banner {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	background: #22c55e1A;
+	color: #15803d;
+	border-radius: 10px;
+	padding: 0.65rem 0.9rem;
+	font-size: 0.8125rem;
+	font-weight: 500;
+}
+
+.service-status-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.85rem;
+}
+
+@media (min-width: 640px) {
+	.service-status-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+.status-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	padding: 0.2rem 0.6rem;
+	border-radius: 999px;
+	white-space: nowrap;
+}

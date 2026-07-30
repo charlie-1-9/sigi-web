@@ -1,0 +1,103 @@
+<div class="max-w-2xl mx-auto">
+<a class="back-link" routerLink="/">
+	<i class="pi pi-arrow-left"></i> Volver al inicio
+</a>
+
+<div class="page-header">
+	<div>
+		<h1 class="page-title">Ayuda</h1>
+		<p class="page-subtitle">Respuestas a las dudas más comunes — quizás no necesites reportar nada.</p>
+	</div>
+</div>
+
+<div class="page-card w-full">
+	<input type="text" pInputText [(ngModel)]="search" placeholder="Busca por palabra clave…" class="w-full mb-4" />
+
+	@if (loading) {
+		<p class="text-sm text-gray-400 m-0">Cargando…</p>
+	} @else if (filteredArticles.length === 0) {
+		<div class="empty-state !py-8">
+			<i class="pi pi-search"></i>
+			<p class="text-sm m-0 mb-1">No encontramos artículos con esa búsqueda.</p>
+			<p class="text-xs text-gray-400 m-0 mb-3">¿No encuentras lo que buscas?</p>
+			<a routerLink="/incident/insert" class="p-button p-button-sm">Reportar un problema</a>
+		</div>
+	} @else {
+		<div class="flex flex-col gap-2">
+			@for (article of filteredArticles; track article.idArticle) {
+				<div class="article-item" [class.article-item--open]="openArticleId === article.idArticle">
+					<button type="button" class="article-question" (click)="toggleArticle(article)">
+						<span>{{article.title}}</span>
+						<i class="pi" [class]="openArticleId === article.idArticle ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+					</button>
+					@if (openArticleId === article.idArticle) {
+						<p class="article-answer wizard-fade-in">{{article.content}}</p>
+					}
+				</div>
+			}
+		</div>
+	}
+</div>
+
+@if (!canContactColleague) {
+	<!-- Solicitante: lo suyo es reportar una incidencia, no "contactar a un colega". -->
+	<div class="page-card w-full mt-4 still-need-help">
+		<i class="pi pi-comments"></i>
+		<div>
+			<p class="m-0 font-medium">¿Ninguna solución funcionó?</p>
+			<p class="m-0 text-sm text-gray-500">Repórtalo y un técnico lo revisa — ya tienes la mitad del camino andado.</p>
+		</div>
+		<a routerLink="/incident/insert" class="p-button p-button-sm ml-auto">Reportar</a>
+	</div>
+} @else {
+	<!-- Admin OTI / Técnico: se coordinan entre ellos, no reportan tickets. -->
+	<div class="page-card w-full mt-4">
+		<div class="flex items-center gap-3 mb-3">
+			<i class="pi pi-comments text-xl" style="color: var(--p-primary-color, #1E3A5F);"></i>
+			<div>
+				<p class="m-0 font-medium">Contactar a un colega</p>
+				<p class="m-0 text-sm text-gray-500">{{contactLabel}} — le va a llegar como notificación.</p>
+			</div>
+		</div>
+
+		@if (contacts.length === 0) {
+			<p class="text-sm text-gray-400 m-0">
+				{{ role === 'Administrador OTI' ? 'No hay técnicos registrados por ahora.' : 'No hay administradores OTI registrados por ahora.' }}
+			</p>
+		} @else {
+			<div class="flex flex-col gap-3">
+				<p-select
+					[(ngModel)]="selectedContactId"
+					[options]="contacts"
+					optionLabel="fullName"
+					optionValue="idUser"
+					placeholder="Elige a quién escribirle…"
+					styleClass="w-full" />
+
+				<textarea
+					pTextarea
+					rows="3"
+					[(ngModel)]="messageText"
+					placeholder="Escribe tu mensaje…"
+					class="w-full"></textarea>
+
+				<div class="flex items-center gap-3">
+					<p-button
+						label="Enviar mensaje"
+						icon="pi pi-send"
+						[loading]="sendingMessage"
+						[disabled]="!selectedContactId || !messageText.trim()"
+						(click)="sendMessage()" />
+
+					@if (messageSent) {
+						<span class="text-sm" style="color: #16a34a;"><i class="pi pi-check"></i> Enviado.</span>
+					}
+					@if (sendError) {
+						<span class="text-sm" style="color: #dc2626;">{{sendError}}</span>
+					}
+				</div>
+			</div>
+		}
+	</div>
+}
+</div>

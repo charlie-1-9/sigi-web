@@ -1,0 +1,81 @@
+.login-wrapper {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	background: #F4F5F7;
+	/* La tarjeta de login siempre es clara — no tiene variante oscura — pero
+	   la app activa .my-app-dark en <html> según la preferencia del sistema
+	   operativo incluso en esta pantalla. Sin esto, el navegador pinta el
+	   texto y los inputs nativos con sus colores por defecto de modo oscuro
+	   (texto blanco sobre esta tarjeta blanca, inputs con fondo negro),
+	   aunque el CSS de la tarjeta en sí siga siendo claro. */
+	color-scheme: light;
+}
+
+.login-icon {
+	width: 48px;
+	height: 48px;
+	border-radius: 12px;
+	background: #1E3A5F;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.login-title {
+	color: #16202B;
+}
+
+.recovery-link {
+	background: none;
+	border: none;
+	padding: 0;
+	font-size: 0.75rem;
+	color: var(--accent, #0F7C6C);
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.recovery-link:hover {
+	color: var(--brand-900, #1E3A5F);
+}
+
+.recovery-info {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	background: #eef3f8;
+	border: 1px solid #d6e2ed;
+	border-radius: 10px;
+	padding: 0.65rem 0.85rem;
+	font-size: 0.75rem;
+	color: var(--brand-900, #1E3A5F);
+}
+
+.recovery-info i {
+	margin-top: 0.1rem;
+	color: var(--brand-600, #4c7398);
+}
+
+.support-line {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	margin: 1.25rem 0 0 0;
+	font-size: 0.75rem;
+	color: #94a3b8;
+}
+
+.support-line a {
+	color: var(--accent, #0F7C6C);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.support-line a:hover {
+	text-decoration: underline;
+}

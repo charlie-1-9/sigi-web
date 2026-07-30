@@ -1,0 +1,214 @@
+@import "primeicons/primeicons.css";
+@import "tailwindcss";
+
+/* ── Tokens de diseño ────────────────────────────────────────────────────
+   Punto único de verdad para color/tipografía/radios/sombra. Todo lo
+   demás en la app (page-card, botones, tags de estado...) debería leer
+   de acá en vez de repetir valores hexadecimales sueltos — así un cambio
+   de marca o de tono se propaga desde un solo lugar. */
+:root {
+	--brand-900: #1E3A5F;   /* navy institucional — texto de marca, botones primarios */
+	--brand-600: #4c7398;   /* navy más claro — hover, elementos secundarios de marca */
+	--accent: #0F7C6C;      /* verde-azulado — acciones positivas, enlaces destacados */
+	--surface: #ffffff;     /* fondo de tarjetas en modo claro */
+	--surface-dark: #16202B;/* fondo de tarjetas en modo oscuro */
+	--background: #F4F5F7;  /* fondo general de la app */
+	--text-primary: #16202B;
+	--text-secondary: #64748b;
+	--text-muted: #94a3b8;
+	--border-color: #eef0f3;
+	--border-color-dark: #2a3644;
+
+	--radius-card: 16px;
+	--radius-control: 10px;
+	--radius-pill: 999px;
+
+	--shadow-card: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.03);
+	--shadow-card-hover: 0 8px 20px rgba(16, 24, 40, 0.08), 0 2px 6px rgba(16, 24, 40, 0.05);
+
+	--font-heading: 'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif;
+	--font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+.my-app-dark {
+	--surface: var(--surface-dark);
+	--border-color: var(--border-color-dark);
+	--text-primary: #f1f5f9;
+	--text-secondary: #cbd5e1;
+	--text-muted: #94a3b8;
+	--shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2);
+	--shadow-card-hover: 0 8px 20px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+html, body {
+	font-family: var(--font-body);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, .page-title, .app-logo {
+	font-family: var(--font-heading);
+}
+
+.errorMessage {
+	color: red;
+}
+
+.font-mono-ticket {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ── Sistema de UI compartido entre páginas ─────────────────────────────
+   Antes cada página repetía "bg-white shadow-sm rounded-lg p-6" a mano;
+   se centraliza aquí para que un cambio de estilo (radio, sombra, padding)
+   se propague de forma consistente a toda la app. */
+
+.page-card {
+	background: var(--surface);
+	border: 1px solid var(--border-color);
+	box-shadow: var(--shadow-card);
+	border-radius: var(--radius-card);
+	padding: 1.5rem;
+	transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Tarjetas que actúan como botón/enlace (accesos rápidos, filas clicables)
+   ganan una elevación sutil al pasar el mouse, para que se sientan
+   interactivas en vez de planas — sin afectar las tarjetas de solo lectura
+   (gráficos, tablas de reportes), que no reciben :hover deliberado aquí. */
+a.page-card:hover,
+button.page-card:hover,
+.page-card.page-card--interactive:hover {
+	box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08), 0 2px 6px rgba(16, 24, 40, 0.05);
+	border-color: #dbe2ea;
+	transform: translateY(-1px);
+}
+
+.page-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 1.5rem;
+}
+
+.page-title {
+	margin: 0;
+	font-size: 1.375rem;
+	font-weight: 700;
+	color: #16202B;
+	letter-spacing: -0.015em;
+}
+
+.page-subtitle {
+	margin: 0.2rem 0 0 0;
+	font-size: 0.875rem;
+	color: #64748b;
+}
+
+.section-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #94a3b8;
+	margin: 0 0 0.35rem 0;
+}
+
+.back-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: 0.8rem;
+	color: #64748b;
+	text-decoration: none;
+	margin-bottom: 0.75rem;
+	cursor: pointer;
+	transition: color 0.15s;
+}
+
+.back-link:hover {
+	color: #1E3A5F;
+}
+
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 3rem 1rem;
+	text-align: center;
+	color: #94a3b8;
+}
+
+.empty-state i {
+	font-size: 1.75rem;
+	margin-bottom: 0.5rem;
+	color: #cbd5e1;
+}
+
+/* Texto visible solo para lectores de pantalla (encabezados de columnas de
+   solo-ícono, etc.) — oculto visualmente sin usar display:none, que también
+   lo ocultaría de la accesibilidad. */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* ── Modo oscuro ─────────────────────────────────────────────────────────
+   Se activa/desactiva agregando la clase .my-app-dark al <html>
+   (ver App.toggleDarkMode()), el mismo selector configurado como
+   darkModeSelector en app.config.ts para los componentes de PrimeNG. */
+
+.my-app-dark body,
+.my-app-dark {
+	color-scheme: dark;
+}
+
+.my-app-dark .page-card {
+	background: #16202B;
+	border-color: #2a3644;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.my-app-dark a.page-card:hover,
+.my-app-dark button.page-card:hover,
+.my-app-dark .page-card.page-card--interactive:hover {
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+	border-color: #35424f;
+}
+
+.my-app-dark .page-title,
+.my-app-dark h1,
+.my-app-dark h2,
+.my-app-dark h3 {
+	color: #f1f5f9;
+}
+
+.my-app-dark .page-subtitle,
+.my-app-dark .section-label,
+.my-app-dark .empty-state,
+.my-app-dark .text-gray-500,
+.my-app-dark .text-gray-400 {
+	color: #94a3b8;
+}
+
+.my-app-dark .text-gray-700 {
+	color: #e2e8f0;
+}
+
+.my-app-dark .back-link {
+	color: #94a3b8;
+}
+
+.my-app-dark .back-link:hover {
+	color: #f1f5f9;
+}

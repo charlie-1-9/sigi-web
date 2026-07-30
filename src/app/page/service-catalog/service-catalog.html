@@ -1,0 +1,33 @@
+<a class="back-link" routerLink="/">
+	<i class="pi pi-arrow-left"></i> Volver al inicio
+</a>
+
+<div class="page-header">
+	<div>
+		<h1 class="page-title">Catálogo de servicios</h1>
+		<p class="page-subtitle">Todo lo que la OTI atiende — elige uno para reportar un problema o pedir algo relacionado.</p>
+	</div>
+</div>
+
+@if (loading) {
+	<p class="text-sm text-gray-400">Cargando…</p>
+} @else {
+	<div class="catalog-grid">
+		@for (c of listCategory; track c.idCategory) {
+			<a class="catalog-card" [routerLink]="['/incident/insert']" [queryParams]="{ category: c.idCategory }">
+				<div class="catalog-card-icon" [style.backgroundColor]="c.color + '1A'">
+					<i class="pi" [class]="c.icon" [style.color]="c.color"></i>
+				</div>
+				<div class="flex-1">
+					<p class="catalog-card-title">{{c.name}}</p>
+					@if (c.description) {
+						<p class="catalog-card-desc">{{c.description}}</p>
+					}
+					@if (c.slaHours) {
+						<p class="catalog-card-sla"><i class="pi pi-clock"></i> Atención esperada: {{c.slaHours}}h</p>
+					}
+				</div>
+			</a>
+		}
+	</div>
+}
